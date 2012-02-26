@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/ax2550</url>
   <depend package="serial"/>
+  <depend package="serial_utils"/>
 
 </package>
 
