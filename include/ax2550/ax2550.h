@@ -103,6 +103,7 @@ namespace ax2550 {
     void sync_ ();
     bool connected_;
     bool synced_;
+    boost::mutex mc_mutex;
   };
 
   /*!

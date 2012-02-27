@@ -92,7 +92,7 @@ AX2550::connect (string port) {
   this->serial_port_->setParity(serial::parity_even);
   this->serial_port_->setStopbits(serial::stopbits_one);
   this->serial_port_->setBytesize(serial::sevenbits);
-  this->serial_port_->setTimeout(50);
+  this->serial_port_->setTimeout(10);
   // Open the serial port
   this->serial_port_->open();
   // Setup the serial listener
@@ -139,6 +139,8 @@ AX2550::move (double speed, double direction) {
   if(!this->connected_) {
     AX2550_THROW(CommandFailedException, "must be connected to move");
   }
+  // Grab the lock
+  boost::mutex::scoped_lock lock(this->mc_mutex);
   char *serial_buffer = new char[4];
   unsigned char speed_hex, direction_hex;
   string fail_why;
@@ -202,6 +204,8 @@ AX2550::queryEncoders (long &encoder1, long &encoder2, bool relative) {
   }
   // Clear the encoder queue
   this->encoders_filt_->clear();
+  // Grab the lock
+  boost::mutex::scoped_lock lock(this->mc_mutex);
   // Query the first encoder
   string cmd1, cmd2, fail_why;
   if (relative) {
@@ -270,6 +274,7 @@ void
 AX2550::sync_ () {
   if (this->synced_)
     return;
+  boost::mutex::scoped_lock lock(this->mc_mutex);
   // Reset the motor controller
   this->serial_port_->write("%rrrrrr\r");
   // Wait for an R/C Message

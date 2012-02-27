@@ -24,6 +24,9 @@ double wheel_base_length = 0.0;
 double wheel_diameter = 0.0;
 double encoder_poll_rate;
 std::string odom_frame_id;
+size_t error_count;
+double target_speed = 0.0;
+double target_direction = 0.0;
 
 double rot_cov = 0.0;
 double pos_cov = 0.0;
@@ -71,10 +74,16 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
         B_rel = B_MAX;
     if(B_rel < -1*B_MAX)
         B_rel = -1*B_MAX;
-    
-    ROS_INFO("Relative move commands: %f %f", A_rel, B_rel);
+
+    // Set the targets
+    target_speed = A_rel;
+    target_direction = B_rel;
+}
+
+void controlLoop() {
+    // ROS_INFO("Relative move commands: %f %f", target_speed, target_direction);
     try {
-    	mc->move(A_rel, B_rel);
+    	mc->move(target_speed, target_direction);
     } catch(const std::exception &e) {
     	if (string(e.what()).find("did not receive") != string::npos
          || string(e.what()).find("failed to receive an echo") != string::npos) {
@@ -112,9 +121,18 @@ void queryEncoders() {
     // Retreive the data
     try {
         mc->queryEncoders(encoder1, encoder2);
+        if (error_count > 0) {
+            error_count -= 1;
+        }
     } catch(std::exception &e) {
-		ROS_ERROR("Error reading the Encoders: %s", e.what());
-        mc->disconnect();
+        if (string(e.what()).find("failed to receive ") != string::npos
+         && error_count != 10) {
+            error_count += 1;
+            ROS_WARN("Error reading the Encoders: %s", e.what());    
+        } else {
+            ROS_ERROR("Error reading the Encoders: %s", e.what());
+            mc->disconnect();
+        }
         return;
     }
     
@@ -258,8 +276,15 @@ int main(int argc, char **argv) {
             	mc->disconnect();
             }
         }
+        int count = 0;
         while(mc != NULL && mc->isConnected() && ros::ok()) {
             queryEncoders();
+            if (count == 2) {
+                controlLoop();
+                count = 0;
+            } else {
+                count += 1;
+            }
 			encoder_rate.sleep();
         }
         if (mc != NULL) {
