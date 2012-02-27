@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
         int count = 0;
         while(mc != NULL && mc->isConnected() && ros::ok()) {
             queryEncoders();
-            if (count == 2) {
+            if (count == 1) {
                 controlLoop();
                 count = 0;
             } else {
