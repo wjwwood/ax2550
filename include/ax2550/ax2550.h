@@ -38,10 +38,11 @@
 #include <string>
 #include <sstream>
 #include <serial/serial.h>
+// #define SERIAL_LISTENER_DEBUG 1
 #include <serial/utils/serial_listener.h>
 
 // Handy macro for throwing exceptions
-#define THROW(exceptionClass,message) throw \
+#define AX2550_THROW(exceptionClass,message) throw \
   exceptionClass(__FILE__,__LINE__,(message))
 
 namespace ax2550 {
@@ -74,25 +75,30 @@ namespace ax2550 {
 
     void disconnect ();
 
+    bool isConnected ();
+
     bool issueCommand (const std::string &command, std::string &fail_why);
 
     void move (double speed, double direction);
+
+    void queryEncoders (long &encoder1, long &encoder2, bool relative = false);
 
     WatchDogCallback watch_dog_callback;
     LoggingCallback debug;
     LoggingCallback info;
     LoggingCallback warn;
   private:
-    // Filter stuff
-    void setupFilters_ ();
-    serial::utils::BufferedFilterPtr encoders_filt;
-    void watchDogCallback_ (const std::string&);
-    serial::utils::FilterPtr watchdog_filt;
-    serial::utils::BufferedFilterPtr ack_nak_filt;
     // Serial stuff
     std::string port_;
     serial::Serial * serial_port_;
     serial::utils::SerialListener serial_listener_;
+    // Filter stuff
+    void setupFilters_ ();
+    serial::utils::BufferedFilterPtr encoders_filt_;
+    void watchDogCallback_ (const std::string&);
+    serial::utils::FilterPtr watch_dog_filt_;
+    serial::utils::BufferedFilterPtr ack_nak_filt_;
+    // serial::utils::BufferedFilterPtr rc_msg_filt_;
     // State stuff
     void sync_ ();
     bool connected_;

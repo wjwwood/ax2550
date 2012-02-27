@@ -10,6 +10,10 @@
   <url>http://ros.org/wiki/ax2550</url>
   <depend package="serial"/>
   <depend package="serial_utils"/>
+  <depend package="roscpp"/>
+  <depend package="tf"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
 
 </package>
 
