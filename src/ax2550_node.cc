@@ -120,7 +120,7 @@ void queryEncoders() {
     ros::Time now = ros::Time::now();
     // Retreive the data
     try {
-        mc->queryEncoders(encoder1, encoder2);
+        mc->queryEncoders(encoder1, encoder2, true);
         if (error_count > 0) {
             error_count -= 1;
         }
@@ -143,7 +143,7 @@ void queryEncoders() {
     double left_v = encoder1 * 2*M_PI / ENCODER_RESOLUTION;
     left_v /= delta_time;
     // left_v *= encoder_poll_rate;
-    double right_v = encoder2 * 2*M_PI / ENCODER_RESOLUTION;
+    double right_v = -encoder2 * 2*M_PI / ENCODER_RESOLUTION;
     right_v /= delta_time;
     // right_v *= encoder_poll_rate;
     
@@ -151,8 +151,8 @@ void queryEncoders() {
     
     encoder_msg.header.stamp = now;
     encoder_msg.header.frame_id = "base_link";
-    encoder_msg.encoders.left_wheel = left_v;
-    encoder_msg.encoders.right_wheel = right_v;
+    encoder_msg.encoders.left_wheel = encoder1;
+    encoder_msg.encoders.right_wheel = -encoder2;
     
     encoder_pub.publish(encoder_msg);
 
@@ -299,6 +299,8 @@ int main(int argc, char **argv) {
         	if (!ros::ok())
         		break;
         }
+        target_speed = 0.0;
+        target_direction = 0.0;
     }
 
     spinner.stop();

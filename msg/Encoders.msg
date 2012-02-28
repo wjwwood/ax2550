@@ -1,2 +1,2 @@
-float32 left_wheel  # In Rads/s
-float32 right_wheel # In Rads/s
+int32 left_wheel  # Encoder counts (absolute or relative)
+int32 right_wheel # Encoder counts (absolute or relative)

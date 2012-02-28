@@ -220,7 +220,7 @@ AX2550::queryEncoders (long &encoder1, long &encoder2, bool relative) {
   } else {
     cmd2 = "?q1";
   }
-  this->serial_port_->write(cmd1+"\r");
+  this->serial_port_->write(cmd2+"\r");
   // Listen for Query 1
   string response = this->encoders_filt_->wait(100);
   if (response.empty()) {
@@ -240,11 +240,17 @@ AX2550::queryEncoders (long &encoder1, long &encoder2, bool relative) {
   // Add filler bytes
   size_t difference = 8 - response.length();
   string filler(difference, fillbyte);
-  response.insert(0, &fillbyte);
+  response.insert(0, filler);
   // Convert to integer
   signed int encoder = 0;
   sscanf(response.c_str(), "%X", &encoder);
   encoder1 = encoder;
+  // reset stuff
+  response = "";
+  fillbyte = '0';
+  difference = 0;
+  filler = "";
+  encoder = 0;
   // Listen for Query 2
   response = this->encoders_filt_->wait(100);
   if (response.empty()) {
@@ -263,7 +269,7 @@ AX2550::queryEncoders (long &encoder1, long &encoder2, bool relative) {
   // Add filler bytes
   difference = 8 - response.length();
   filler = string(difference, fillbyte);
-  response.insert(0, &fillbyte);
+  response.insert(0, filler);
   // Convert to integer
   encoder = 0;
   sscanf(response.c_str(), "%X", &encoder);
