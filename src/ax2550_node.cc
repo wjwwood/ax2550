@@ -151,6 +151,7 @@ void queryEncoders() {
     
     encoder_msg.header.stamp = now;
     encoder_msg.header.frame_id = "base_link";
+    encoder_msg.encoders.time_delta = delta_time;
     encoder_msg.encoders.left_wheel = encoder1;
     encoder_msg.encoders.right_wheel = -encoder2;
     
