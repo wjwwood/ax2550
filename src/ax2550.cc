@@ -36,13 +36,13 @@ inline void tokenizer(const std::string &data,
   boost::split(t, data, boost::is_any_of("W"));
   // Rejoin without the W's
   string new_data = "";
-  for (find_vector_type::iterator it = t.begin(); it != t.end(); it++) {
+  for (find_vector_type::iterator it = t.begin(); it != t.end(); ++it) {
     new_data.append((*it));
   }
   // Split on \r or \n
   find_vector_type t2;
   boost::split(t2, new_data, boost::is_any_of("\r\n"));
-  for (find_vector_type::iterator it = t2.begin(); it != t2.end(); it++) {
+  for (find_vector_type::iterator it = t2.begin(); it != t2.end(); ++it) {
     tokens.push_back(TokenPtr( new std::string(*it) ));
   }
 }
@@ -92,7 +92,8 @@ AX2550::connect (string port) {
   this->serial_port_->setParity(serial::parity_even);
   this->serial_port_->setStopbits(serial::stopbits_one);
   this->serial_port_->setBytesize(serial::sevenbits);
-  this->serial_port_->setTimeout(10);
+  serial::Timeout to = serial::Timeout::simpleTimeout(10);
+  this->serial_port_->setTimeout(to);
   // Open the serial port
   this->serial_port_->open();
   // Setup the serial listener
@@ -134,6 +135,29 @@ AX2550::issueCommand (const string &command, string &fail_why) {
   return true;
 }
 
+inline string
+string_format(const string &fmt, ...) {
+  int size = 100;
+  string str;
+  va_list ap;
+  while (1) {
+    str.resize(size);
+    va_start(ap, fmt);
+    int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
+    va_end(ap);
+    if (n > -1 && n < size) {
+      str.resize(n);
+      return str;
+    }
+    if (n > -1) {
+      size = n + 1;
+    } else {
+      size *= 2;
+    }
+  }
+  return str;
+}
+
 void
 AX2550::move (double speed, double direction) {
   if(!this->connected_) {
@@ -141,18 +165,18 @@ AX2550::move (double speed, double direction) {
   }
   // Grab the lock
   boost::mutex::scoped_lock lock(this->mc_mutex);
-  char *serial_buffer = new char[4];
+  string serial_buffer;
   unsigned char speed_hex, direction_hex;
   string fail_why;
   // Create the speed command
   speed_hex = (unsigned char) (fabs(speed));
   if(speed < 0) {
-    sprintf(serial_buffer, "!a%.2X", speed_hex);
+    serial_buffer = string_format("!a%.2X", speed_hex);
   } else {
-    sprintf(serial_buffer, "!A%.2X", speed_hex);
+    serial_buffer = string_format("!A%.2X", speed_hex);
   }
   // Issue the speed command
-  if (!this->issueCommand(string(serial_buffer), fail_why)) {
+  if (!this->issueCommand(serial_buffer, fail_why)) {
     AX2550_THROW(CommandFailedException, fail_why.c_str());
   }
   // Listen for an ack or nak
@@ -164,15 +188,12 @@ AX2550::move (double speed, double direction) {
     }
     AX2550_THROW(CommandFailedException, "did not receive an ack or nak");
   }
-  // Reset the buffer  
-  delete[] serial_buffer;
-  serial_buffer = new char[4];
   // Create the direction command
   direction_hex = (unsigned char) (fabs(direction));
   if(direction < 0) {
-    sprintf(serial_buffer, "!b%.2X", direction_hex);
+    serial_buffer = string_format("!b%.2X", direction_hex);
   } else {
-    sprintf(serial_buffer, "!B%.2X", direction_hex);
+    serial_buffer = string_format("!B%.2X", direction_hex);
   }
   // Issue the direction command
   if (!this->issueCommand(string(serial_buffer), fail_why)) {
@@ -246,7 +267,6 @@ AX2550::queryEncoders (long &encoder1, long &encoder2, bool relative) {
   sscanf(response.c_str(), "%X", &encoder);
   encoder1 = encoder;
   // reset stuff
-  response = "";
   fillbyte = '0';
   difference = 0;
   filler = "";

@@ -1,85 +1,48 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(ax2550)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-# set(ROS_BUILD_TYPE RelWithDebInfo)
+find_package(catkin REQUIRED
+  COMPONENTS
+    geometry_msgs
+    nav_msgs
+    roscpp
+    serial
+    serial_utils
+    tf
+)
 
-rosbuild_init()
+find_package(Boost REQUIRED COMPONENTS system thread)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+add_message_files(
+  FILES
+    Encoders.msg
+    StampedEncoders.msg
+)
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+generate_messages(DEPENDENCIES geometry_msgs nav_msgs)
 
-# # ----------------------------------------------------------------------
-# # join_arguments(var)
-# #
-# # Join the arguments in the (semi-colon separated) list VAR into one
-# # space separated string. The string will be returned in the variable
-# # VAR. This command is the opposite of the built-in command
-# # separate_arguments().
-# # ----------------------------------------------------------------------
-# macro(join_arguments var)
-#   set(_var)
-#   foreach(_v ${${var}})
-#     set(_var "${_var} ${_v}")
-#   endforeach(_v ${${var}})
-#   string(STRIP ${_var} _var)
-#   set(${var} ${_var})
-# endmacro(join_arguments)
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ax2550
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp serial serial_utils tf
+)
 
-# # Enable warnings
-# # Assuming unix means a gcc style compiler, eg. g++ or clang++.
-# IF(UNIX)
-#   set(CMAKE_CXX_FLAGS "-Wall -Weffc++ -pedantic -pedantic-errors -Wextra "
-#                       "-Wall -Waggregate-return -Wcast-align -Wcast-qual "
-#                       "-Wchar-subscripts -Wcomment -Wconversion "
-#                       "-Wdisabled-optimization -Wfloat-equal -Wformat "
-#                       "-Wformat=2 -Wformat-nonliteral -Wformat-security "
-#                       "-Wformat-y2k -Wimplicit -Wimport -Winit-self "
-#                       "-Winline -Winvalid-pch -Wlong-long -Wmissing-braces "
-#                       "-Wmissing-field-initializers "
-#                       "-Wmissing-format-attribute -Wmissing-include-dirs "
-#                       "-Wmissing-noreturn -Wpacked -Wparentheses "
-#                       "-Wpointer-arith -Wredundant-decls -Wreturn-type "
-#                       "-Wsequence-point -Wshadow -Wsign-compare "
-#                       "-Wstack-protector -Wstrict-aliasing "
-#                       "-Wstrict-aliasing=2 -Wswitch -Wswitch-default "
-#                       "-Wswitch-enum -Wtrigraphs -Wuninitialized "
-#                       "-Wunknown-pragmas -Wunreachable-code -Wunused "
-#                       "-Wunused-function -Wunused-label -Wunused-parameter "
-#                       "-Wunused-value -Wunused-variable -Wvariadic-macros "
-#                       "-Wvolatile-register-var -Wwrite-strings")
-#   join_arguments(CMAKE_CXX_FLAGS)
-# ELSEIF(WIN32)
-#   # Force to always compile with W4
-#   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-#     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#   else()
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-#   endif()
-# endif(UNIX)
+include_directories(include ${catkin_INCLUDE_DIRS})
 
-# Use clang if available
-IF(EXISTS /usr/bin/clang)
-set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=5")
-ENDIF(EXISTS /usr/bin/clang)
+## ax2550 ROS agnostic library
+add_library(ax2550 src/ax2550.cc)
+target_link_libraries(ax2550 ${serial_LIBRARIES} ${serial_utils_LIBRARIES} ${Boost_LIBRARIES})
 
-# Build the ax2550 library
-rosbuild_add_library(${PROJECT_NAME} src/ax2550.cc)
+## ax2550 ROS Node
+add_executable(ax2550_node src/ax2550_node.cc)
+target_link_libraries(ax2550_node ax2550 ${catkin_LIBRARIES})
+add_dependencies(ax2550_node ax2550_generate_messages_cpp ${catkin_EXPORTED_LIBRARIES})
 
-# Build the ROS node
-rosbuild_add_executable(ax2550_node src/ax2550_node.cc)
-target_link_libraries(ax2550_node ${PROJECT_NAME})
+install(TARGETS ax2550 ax2550_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
