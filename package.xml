@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>ax2550</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>Package which provides a library and a ROS ndoe for interfacing with the Roboteq AX2550 motor controller.</description>
 
   <maintainer email="wjwwood@gmail.com">William Woodall</maintainer>
