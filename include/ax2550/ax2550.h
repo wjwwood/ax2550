@@ -70,7 +70,7 @@ namespace ax2550 {
   public:
     AX2550 (std::string port = "");
     ~AX2550 ();
-  
+
     void connect (std::string port = "");
 
     void disconnect ();
